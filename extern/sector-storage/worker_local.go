@@ -487,6 +487,10 @@ func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
 	if err != nil {
 		panic(err)
 	}
+	if env, ok := os.LookupEnv("WORKER_NAME"); ok {
+		hostname = hostname + "-" + env
+	}
+
 
 	gpus, err := ffi.GetGPUDevices()
 	if err != nil {
@@ -509,7 +513,8 @@ func (l *LocalWorker) Info(context.Context) (storiface.WorkerInfo, error) {
 	}
 
 	return storiface.WorkerInfo{
-		Hostname:        hostname,
+		Hostname:      hostname,
+		TaskResources: storiface.NewTaskLimitConfig(),
 		IgnoreResources: l.ignoreResources,
 		Resources: storiface.WorkerResources{
 			MemPhysical: mem.Total,

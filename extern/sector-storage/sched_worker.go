@@ -46,8 +46,10 @@ func (sh *scheduler) runWorker(ctx context.Context, w Worker) error {
 		active:    &activeResources{},
 		enabled:   true,
 
-		closingMgr: make(chan struct{}),
-		closedMgr:  make(chan struct{}),
+		closingMgr:   make(chan struct{}),
+		closedMgr:    make(chan struct{}),
+		workerOnFree: make(chan struct{}),
+		todo:         make([]*workerRequest, 0),
 	}
 
 	wid := WorkerID(sessID)
@@ -112,17 +114,14 @@ func (sw *schedWorker) handleWorker() {
 			sched.workersLk.Unlock()
 
 			// ask for more windows if we need them (non-blocking)
-			if enabled {
-				if !sw.requestWindows() {
-					return // graceful shutdown
-				}
+			if enabled { // ask for more windows if we need them (non-blocking)
+				sched.workerChange <- struct{}{} // worker空闲申请调度
 			}
 		}
 
 		// wait for more windows to come in, or for tasks to get finished (blocking)
-		for {
-			// ping the worker and check session
-			if !sw.checkSession(ctx) {
+		for { // 循环等待woker做完任务返回或有调度窗口进来，// wait for more windows to come in, or for tasks to get finished (blocking)
+			if !sw.checkSession(ctx) { // ping the worker and check session 如果连接不上，禁用后一直试探；如果检查发现session id不一致则弃用
 				return // invalid session / exiting
 			}
 
@@ -139,35 +138,19 @@ func (sw *schedWorker) handleWorker() {
 				}
 			}
 
-			// wait for more tasks to be assigned by the main scheduler or for the worker
-			// to finish precessing a task
-			update, pokeSched, ok := sw.waitForUpdates()
-			if !ok {
-				return
-			}
-			if pokeSched {
-				// a task has finished preparing, which can mean that we've freed some space on some worker
-				select {
-				case sched.workerChange <- struct{}{}:
-				default: // workerChange is buffered, and scheduling is global, so it's ok if we don't send here
-				}
-			}
-			if update {
+			select {
+			case <-sw.heartbeatTimer.C:
+			case <-worker.workerOnFree:
+				log.Debugw("task done", "workerid", sw.wid)
 				break
+			case <-sched.closing:
+				return
+			case <-worker.closingMgr:
+				return
 			}
 		}
 
-		// process assigned windows (non-blocking)
-		sched.workersLk.RLock()
-		worker.wndLk.Lock()
 
-		sw.workerCompactWindows()
-
-		// send tasks to the worker
-		sw.processAssignedWindows()
-
-		worker.wndLk.Unlock()
-		sched.workersLk.RUnlock()
 	}
 }
 
@@ -177,6 +160,7 @@ func (sw *schedWorker) disable(ctx context.Context) error {
 	// request cleanup in the main scheduler goroutine
 	select {
 	case sw.sched.workerDisable <- workerDisableReq{
+		todo: sw.worker.todo,
 		activeWindows: sw.worker.activeWindows,
 		wid:           sw.wid,
 		done: func() {
@@ -399,10 +383,10 @@ func (sw *schedWorker) assignReadyWork() {
 	worker.lk.Lock()
 	defer worker.lk.Unlock()
 
-	if worker.active.hasWorkWaiting() {
-		// prepared tasks have priority
-		return
-	}
+	//if worker.active.hasWorkWaiting() {
+	//	// prepared tasks have priority
+	//	return
+	//}
 
 assignLoop:
 	// process windows in order

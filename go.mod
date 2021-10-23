@@ -124,6 +124,7 @@ require (
 	github.com/mattn/go-isatty v0.0.14
 	github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 	github.com/mitchellh/go-homedir v1.1.0
+	github.com/Dictators/sector-counter v0.0.0-20211023073103-d5ef415e1dae
 	github.com/multiformats/go-base32 v0.0.4
 	github.com/multiformats/go-multiaddr v0.4.1
 	github.com/multiformats/go-multiaddr-dns v0.3.1
@@ -159,6 +160,7 @@ require (
 	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1
 	gopkg.in/cheggaaa/pb.v1 v1.0.28
 	gotest.tools v2.2.0+incompatible
+
 )
 
 replace github.com/libp2p/go-libp2p-yamux => github.com/libp2p/go-libp2p-yamux v0.5.1
@@ -166,3 +168,4 @@ replace github.com/libp2p/go-libp2p-yamux => github.com/libp2p/go-libp2p-yamux v
 replace github.com/filecoin-project/filecoin-ffi => ./extern/filecoin-ffi
 
 replace github.com/filecoin-project/test-vectors => ./extern/test-vectors
+replace github.com/Dictators/sector-counter => ./extern/sector-counter

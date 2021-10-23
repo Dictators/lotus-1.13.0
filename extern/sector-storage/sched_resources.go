@@ -7,14 +7,14 @@ import (
 )
 
 func (a *activeResources) withResources(id WorkerID, wr storiface.WorkerInfo, r Resources, locker sync.Locker, cb func() error) error {
-	for !a.canHandleRequest(r, id, "withResources", wr) {
-		if a.cond == nil {
-			a.cond = sync.NewCond(locker)
-		}
-		a.waiting++
-		a.cond.Wait()
-		a.waiting--
-	}
+	//for !a.canHandleRequest(r, id, "withResources", wr) {
+	//	if a.cond == nil {
+	//		a.cond = sync.NewCond(locker)
+	//	}
+	//	a.waiting++
+	//	a.cond.Wait()
+	//	a.waiting--
+	//}
 
 	a.add(wr.Resources, r)
 
@@ -26,9 +26,9 @@ func (a *activeResources) withResources(id WorkerID, wr storiface.WorkerInfo, r 
 }
 
 // must be called with the same lock as the one passed to withResources
-func (a *activeResources) hasWorkWaiting() bool {
-	return a.waiting > 0
-}
+//func (a *activeResources) hasWorkWaiting() bool {
+//	return a.waiting > 0
+//}
 
 func (a *activeResources) add(wr storiface.WorkerResources, r Resources) {
 	if r.CanGPU {

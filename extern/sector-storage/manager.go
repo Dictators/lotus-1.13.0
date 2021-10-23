@@ -445,7 +445,7 @@ func (m *Manager) SealCommit1(ctx context.Context, sector storage.SectorRef, tic
 	// NOTE: We set allowFetch to false in so that we always execute on a worker
 	// with direct access to the data. We want to do that because this step is
 	// generally very cheap / fast, and transferring data is not worth the effort
-	selector := newExistingSelector(m.index, sector.ID, storiface.FTCache|storiface.FTSealed, false)
+	selector := newExistingSelector(m.index, sector.ID, storiface.FTCache|storiface.FTSealed, true)
 
 	err = m.sched.Schedule(ctx, sector, sealtasks.TTCommit1, selector, m.schedFetch(sector, storiface.FTCache|storiface.FTSealed, storiface.PathSealing, storiface.AcquireMove), func(ctx context.Context, w Worker) error {
 		err := m.startWork(ctx, w, wk)(w.SealCommit1(ctx, sector, ticket, seed, pieces, cids))
