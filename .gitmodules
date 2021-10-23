@@ -7,3 +7,7 @@
 [submodule "extern/test-vectors"]
 	path = extern/test-vectors
 	url = https://github.com/filecoin-project/test-vectors.git
+[submodule "extern/sector-counter"]
+        path = extern/sector-counter
+        url = https://github.com/Dictators/sector-counter.git
+
